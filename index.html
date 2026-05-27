@@ -285,7 +285,6 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 </head>
 <body>
 
-<!-- HEADER -->
 <div class="header">
   <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span></div>
   <div class="header-right">
@@ -294,7 +293,6 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
   </div>
 </div>
 
-<!-- TABS -->
 <div class="tabs">
   <div class="tab active" onclick="switchTab('tasks')" id="tab-tasks">Tasks</div>
   <div class="tab" onclick="switchTab('lists')" id="tab-lists">Lists</div>
@@ -302,7 +300,6 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
   <div class="tab" onclick="switchTab('ai')" id="tab-ai">✦ AI</div>
 </div>
 
-<!-- TASKS VIEW -->
 <div id="view-tasks" style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0;height:0">
   <div class="date-filters" id="dateFilters"></div>
   <div class="filter-section"><div class="filter-scroll" id="filterScroll"></div></div>
@@ -311,19 +308,16 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
   <div class="task-list-wrap" id="taskList"></div>
 </div>
 
-<!-- LISTS VIEW -->
 <div id="view-lists" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
   <div class="filter-section" style="padding-top:8px"><div class="filter-scroll" id="listsFilterScroll"></div></div>
   <div class="search-wrap"><span class="search-icon">⌕</span><input class="search-input" id="listsSearchInput" placeholder="search lists..." oninput="renderLists()"></div>
   <div class="task-list-wrap" id="listsList" style="padding-bottom:80px"></div>
 </div>
 
-<!-- CALENDAR VIEW -->
 <div id="view-calendar" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
   <div class="cal-wrap" id="calWrap"><div class="cal-empty">Connect Google to see your calendar</div></div>
 </div>
 
-<!-- AI VIEW -->
 <div id="view-ai" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0">
   <div class="ai-wrap" id="aiWrap">
     <div class="ai-card" id="aiBriefingCard">
@@ -335,7 +329,6 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 
 <button class="fab" id="fab" onclick="openAddTask()">+</button>
 
-<!-- DRAWER -->
 <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()">
   <div class="drawer" onclick="event.stopPropagation()">
     <div class="drawer-header">
@@ -354,7 +347,6 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
   </div>
 </div>
 
-<!-- ADD TASK SHEET -->
 <div class="sheet-overlay" id="addTaskSheet" onclick="handleSheetClick(event,'addTaskSheet')">
   <div class="sheet">
     <div class="sheet-handle"></div>
@@ -402,7 +394,6 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
   </div>
 </div>
 
-<!-- TASK DETAIL SUBPAGE -->
 <div class="subpage" id="taskDetailPage">
   <div class="subpage-header">
     <div class="back-btn" onclick="closeDetail()">← Back</div>
@@ -414,7 +405,6 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
   </div>
 </div>
 
-<!-- COMPLETED SUBPAGE -->
 <div class="subpage" id="completedPage">
   <div class="subpage-header">
     <div class="back-btn" onclick="closePage('completedPage')">← Back</div>
@@ -429,7 +419,6 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
   </div>
 </div>
 
-<!-- SETTINGS SUBPAGE -->
 <div class="subpage" id="settingsPage">
   <div class="subpage-header">
     <div class="back-btn" onclick="closePage('settingsPage')">← Back</div>
@@ -440,7 +429,6 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 
 <div class="toast" id="toast"></div>
 
-<!-- SURE? CONFIRM MODAL -->
 <div class="sheet-overlay" id="confirmSheet" onclick="handleSheetClick(event,'confirmSheet')" style="z-index:500">
   <div class="sheet" style="padding-bottom:28px">
     <div class="sheet-handle"></div>
@@ -641,7 +629,6 @@ function buildCompFilters() {
   });
 }
 
-// REST OF FILE CODE INJECTED CLEANLY DOWNWARD
 function buildSortToolbar(elId, mode) {
   const el = document.getElementById(elId); if(!el) return;
   const isComp = mode === 'comp';
@@ -912,7 +899,6 @@ function openDrawer() { document.getElementById('drawerOverlay').classList.add('
 function closeDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); }
 function openCompleted() { closeDrawer(); renderCompleted(); document.getElementById('completedPage').classList.add('open'); }
 function closePage(id) { document.getElementById(id).classList.remove('open'); }
-
 function switchTab(tab) { 
   currentTab=tab; 
   ['tasks','lists','calendar','ai'].forEach(t=>{
@@ -921,14 +907,17 @@ function switchTab(tab) {
   });
 }
 
-// FULL OPERATIONAL GEMINI-1.5-FLASH AI BACKGROUND SCRIPT INJECTED HERE
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function formatDate(d){if(!d)return'';const dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function showToast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2000);}
+
 async function loadAI() {
   const briefText = document.getElementById('aiBriefingText');
   briefText.innerHTML = '<div class="ai-loading"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div><span>Querying Gemini Neural Core...</span></div>';
   
   try {
     const pendingTasks = tasks.filter(t => !t.complete).map(t => `- [${t.cat}] ${t.task}`).join('\n');
-    const prompt = `Formulate a concise, high-level personal 3-sentence action brief optimization breakdown based around the structural goals found inside this data container listing. Focus heavily on urgent metrics:\n${pendingTasks}`;
+    const prompt = `Formulate a concise personal 3-sentence action brief optimization breakdown based on these items. Focus on high priority goals:\n${pendingTasks}`;
     
     const GEMINI_KEY = 'AIzaSyAPWUK9vBouKahIpYsiONo6sEJKHMNPJ2U';
     const response = await fetch(
@@ -943,28 +932,12 @@ async function loadAI() {
     );
     
     const data = await response.json();
-    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'System unable to compute diagnostic analysis summary content.';
+    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'System unable to compute analysis.';
     briefText.textContent = resultText;
   } catch (e) {
-    briefText.textContent = 'API Error execution fault trace logged: ' + e.message;
+    briefText.textContent = 'API Error execution fault: ' + e.message;
   }
 }
-
-function initVoice() {
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR) return;
-  recognition=new SR(); recognition.continuous=false; recognition.interimResults=false;
-  recognition.onresult=e=>{ document.getElementById('taskInput').value = e.results[0][0].transcript; };
-  recognition.onend=()=>{ isListening=false; document.getElementById('voiceBtn').classList.remove('listening'); };
-}
-function toggleVoice() { 
-  if(!recognition) return; 
-  if(isListening) { recognition.stop(); } 
-  else { isListening=true; document.getElementById('voiceBtn').classList.add('listening'); recognition.start(); } 
-}
-
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function formatDate(d){if(!d)return'';const dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
-function showToast(msg){const t=document.getElementById('toast');t.innerHTML=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2000);}
 
 init();
 </script>
