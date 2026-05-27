@@ -2,14 +2,14 @@
   "name": "SB's Tasks",
   "short_name": "SB's Tasks",
   "description": "Personal task manager",
-  "start_url": "/index.html",
+  "start_url": "/sbs-tasks/index.html",
   "display": "standalone",
   "background_color": "#0d0d15",
   "theme_color": "#0d0d15",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon.svg",
+      "src": "/sbs-tasks/TaskAPPicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
