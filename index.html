@@ -1466,9 +1466,8 @@ SUGGEST: [Category] Task description | short reason | sender@domain.com
 
 Categories available: ${catNames}`;
 
-    const GEMINI_KEY = 'AIzaSyAPWUK9vBouKahIpYsiONo6sEJKHMNPJ2U';
     const geminiResp = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_KEY,
+      'https://gemini-proxy.steveblekaitis.workers.dev',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
