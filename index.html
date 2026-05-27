@@ -1457,14 +1457,14 @@ ${calData}
 Recent Gmail (primary inbox):
 ${gmailData}
 
-Do two things:
+Respond with exactly two sections, no other text:
 
-1. DAILY BRIEFING: Write a concise 3-5 sentence briefing focused ONLY on today's emails and calendar. What emails need action? Any calendar events to prepare for? Do NOT mention tasks from the task list — only Gmail and Calendar content.
+BRIEFING: Write 3-4 sentences focused ONLY on today's emails and calendar. What needs action? What's coming up? Be specific about actual email subjects and calendar events. No asterisks or markdown.
 
-2. GMAIL SUGGESTIONS: Up to 5 actionable tasks based on emails. Format exactly:
+Then list up to 5 suggested tasks from emails:
 SUGGEST: [Category] Task description | short reason | sender@domain.com
 
-Categories available: ${catNames}`;
+Categories: ${catNames}`;
 
     const geminiResp = await fetch(
       'https://gemini-proxy.steveblekaitis.workers.dev',
@@ -1473,7 +1473,7 @@ Categories available: ${catNames}`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 1000, temperature: 0.4 }
+          generationConfig: { maxOutputTokens: 2000, temperature: 0.4 }
         })
       }
     );
@@ -1526,12 +1526,13 @@ function renderGmailRaw(emails, wrap) {
     </div>`;
   });
 
+  // Build both cards and keep them both visible permanently
   wrap.innerHTML = `
     <div class="ai-card" id="aiBriefingCard">
       <div class="ai-card-title">✦ Daily Briefing <button class="btn-refresh" onclick="loadAI()" style="margin-left:auto">↻</button></div>
       <div class="ai-loading"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div><span>Generating briefing...</span></div>
     </div>
-    <div class="ai-card">
+    <div class="ai-card" id="gmailCard">
       <div class="ai-card-title">📧 Gmail · ${gmailDays===1?'Today':gmailDays+' days'} <span style="color:var(--text3);font-size:10px;font-weight:500">${filtered.length} emails · long-press to block</span></div>
       ${emailHtml}
     </div>`;
@@ -1634,7 +1635,12 @@ function parseAndRenderAI(text) {
 
   const lines = text.split('\n');
   let briefing = ''; const suggestions = []; let inSug = false;
-  lines.forEach(line => {
+  // Remove any intro text before BRIEFING:
+  const briefingStart = text.indexOf('BRIEFING:');
+  const cleanText = briefingStart >= 0 ? text.slice(briefingStart) : text;
+  const cleanLines = cleanText.split('\n');
+
+  cleanLines.forEach(line => {
     if (line.startsWith('SUGGEST:')) {
       inSug = true;
       const parts = line.replace('SUGGEST:','').trim().split('|');
@@ -1645,7 +1651,8 @@ function parseAndRenderAI(text) {
       const cat = catMatch ? catMatch[1] : 'Other';
       const taskText = taskPart.replace(/^\[[\w\s-]+\]\s*/,'');
       suggestions.push({cat, task:taskText, reason, from:fromPart});
-    } else if (!inSug && line.trim()) { briefing += line + '\n'; }
+    } else if (!inSug && line.trim() && !line.startsWith('BRIEFING:')) { briefing += line + '\n'; }
+    else if (line.startsWith('BRIEFING:')) { briefing += line.replace('BRIEFING:','').trim() + '\n'; }
   });
 
   // Update briefing card content only
