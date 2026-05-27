@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="100" fill="#0a0a0f"/>
+<g transform="translate(256,256)">
+  <polygon points="0,-268 9,-215 0,-202 -9,-215" fill="#FF6A00" opacity="0.9"/>
+  <polygon points="0,268 9,215 0,202 -9,215" fill="#FF6A00" opacity="0.9"/>
+  <polygon points="-268,0 -215,9 -202,0 -215,-9" fill="#FF6A00" opacity="0.9"/>
+  <polygon points="268,0 215,9 202,0 215,-9" fill="#FF6A00" opacity="0.9"/>
+  <polygon points="-192,-192 -142,-150 -133,-133 -150,-142" fill="#FF8C00" opacity="0.85"/>
+  <polygon points="192,-192 142,-150 133,-133 150,-142" fill="#FF8C00" opacity="0.85"/>
+  <polygon points="-192,192 -142,150 -133,133 -150,142" fill="#FF8C00" opacity="0.85"/>
+  <polygon points="192,192 142,150 133,133 150,142" fill="#FF8C00" opacity="0.85"/>
+  <polygon points="125,-238 104,-190 95,-180 90,-195" fill="#FFB300" opacity="0.75"/>
+  <polygon points="-125,-238 -104,-190 -95,-180 -90,-195" fill="#FFB300" opacity="0.75"/>
+  <polygon points="238,-125 190,-104 180,-95 195,-90" fill="#FFB300" opacity="0.75"/>
+  <polygon points="238,125 190,104 180,95 195,90" fill="#FFB300" opacity="0.75"/>
+  <polygon points="125,238 104,190 95,180 90,195" fill="#FFB300" opacity="0.75"/>
+  <polygon points="-125,238 -104,190 -95,180 -90,195" fill="#FFB300" opacity="0.75"/>
+  <polygon points="-238,125 -190,104 -180,95 -195,90" fill="#FFB300" opacity="0.75"/>
+  <polygon points="-238,-125 -190,-104 -180,-95 -195,-90" fill="#FFB300" opacity="0.75"/>
+  <polygon points="0,-215 11,-155 0,-138 -11,-155" fill="#FFB300" opacity="0.95"/>
+  <polygon points="0,215 11,155 0,138 -11,155" fill="#FFB300" opacity="0.95"/>
+  <polygon points="-215,0 -155,11 -138,0 -155,-11" fill="#FFB300" opacity="0.95"/>
+  <polygon points="215,0 155,11 138,0 155,-11" fill="#FFB300" opacity="0.95"/>
+  <polygon points="-152,-152 -100,-105 -88,-88 -105,-100" fill="#FFD000" opacity="0.9"/>
+  <polygon points="152,-152 100,-105 88,-88 105,-100" fill="#FFD000" opacity="0.9"/>
+  <polygon points="-152,152 -100,105 -88,88 -105,100" fill="#FFD000" opacity="0.9"/>
+  <polygon points="152,152 100,105 88,88 105,100" fill="#FFD000" opacity="0.9"/>
+  <polygon points="88,-200 68,-148 58,-136 52,-152" fill="#FFE500" opacity="0.8"/>
+  <polygon points="-88,-200 -68,-148 -58,-136 -52,-152" fill="#FFE500" opacity="0.8"/>
+  <polygon points="200,-88 148,-68 136,-58 152,-52" fill="#FFE500" opacity="0.8"/>
+  <polygon points="200,88 148,68 136,58 152,52" fill="#FFE500" opacity="0.8"/>
+  <polygon points="88,200 68,148 58,136 52,152" fill="#FFE500" opacity="0.8"/>
+  <polygon points="-88,200 -68,148 -58,136 -52,152" fill="#FFE500" opacity="0.8"/>
+  <polygon points="-200,88 -148,68 -136,58 -152,52" fill="#FFE500" opacity="0.8"/>
+  <polygon points="-200,-88 -148,-68 -136,-58 -152,-52" fill="#FFE500" opacity="0.8"/>
+  <polygon points="0,-172 14,-78 0,-58 -14,-78" fill="#FF6A00"/>
+  <polygon points="0,172 14,78 0,58 -14,78" fill="#FF6A00"/>
+  <polygon points="-172,0 -78,14 -58,0 -78,-14" fill="#FF6A00"/>
+  <polygon points="172,0 78,14 58,0 78,-14" fill="#FF6A00"/>
+  <polygon points="-122,-122 -52,-58 -36,-36 -58,-52" fill="#FF8C00"/>
+  <polygon points="122,-122 52,-58 36,-36 58,-52" fill="#FF8C00"/>
+  <polygon points="-122,122 -52,58 -36,36 -58,52" fill="#FF8C00"/>
+  <polygon points="122,122 52,58 36,36 58,52" fill="#FF8C00"/>
+  <polygon points="0,-150 10,-84 0,-68 -10,-84" fill="#FFB300"/>
+  <polygon points="80,-128 44,-66 33,-50 22,-70" fill="#FFB300"/>
+  <polygon points="128,-80 66,-44 50,-33 70,-22" fill="#FFB300"/>
+  <polygon points="150,0 84,10 68,0 84,-10" fill="#FFB300"/>
+  <polygon points="128,80 66,44 50,33 70,22" fill="#FFB300"/>
+  <polygon points="80,128 44,66 33,50 22,70" fill="#FFB300"/>
+  <polygon points="0,150 10,84 0,68 -10,84" fill="#FFB300"/>
+  <polygon points="-80,128 -44,66 -33,50 -22,70" fill="#FFB300"/>
+  <polygon points="-128,80 -66,44 -50,33 -70,22" fill="#FFB300"/>
+  <polygon points="-150,0 -84,10 -68,0 -84,-10" fill="#FFB300"/>
+  <polygon points="-128,-80 -66,-44 -50,-33 -70,-22" fill="#FFB300"/>
+  <polygon points="-80,-128 -44,-66 -33,-50 -22,-70" fill="#FFB300"/>
+  <circle r="177" fill="#FF6A00" opacity="0.35"/>
+  <circle r="150" fill="#FF8C00" opacity="0.45"/>
+  <circle r="126" fill="#FFB300" opacity="0.55"/>
+  <circle r="105" fill="#FFD000" opacity="0.75"/>
+  <circle r="87" fill="#FFE500" opacity="0.9"/>
+  <circle r="72" fill="#FFF59D"/>
+  <circle r="63" fill="#FFFFFF"/>
+  <text x="0" y="30" font-family="Arial Black,Impact,sans-serif" font-weight="900" font-size="81" text-anchor="middle" fill="#0a0a0f" letter-spacing="-4">SB</text>
+</g>
+</svg>
