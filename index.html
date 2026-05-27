@@ -77,7 +77,7 @@ body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); 
 .filter-scroll { display:flex; gap:7px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
 .filter-scroll::-webkit-scrollbar { display:none; }
 .pill { flex-shrink:0; padding:5px 12px; border-radius:20px; font-size:11px; border:1.5px solid #666680; background:#2a2a3d; color:#f0f0ff; cursor:pointer; font-weight:600; transition:all 0.15s; }
-.pill.active-all { background:var(--accent); border-color:var(--accent); color; white; }
+.pill.active-all { background:var(--accent); border-color:var(--accent); color: white; }
 .pill[data-cat].active { color:#0d0d15; border-color:transparent; }
 
 /* SEARCH */
@@ -641,6 +641,7 @@ function buildCompFilters() {
   });
 }
 
+// REST OF FILE CODE INJECTED CLEANLY DOWNWARD
 function buildSortToolbar(elId, mode) {
   const el = document.getElementById(elId); if(!el) return;
   const isComp = mode === 'comp';
@@ -911,6 +912,7 @@ function openDrawer() { document.getElementById('drawerOverlay').classList.add('
 function closeDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); }
 function openCompleted() { closeDrawer(); renderCompleted(); document.getElementById('completedPage').classList.add('open'); }
 function closePage(id) { document.getElementById(id).classList.remove('open'); }
+
 function switchTab(tab) { 
   currentTab=tab; 
   ['tasks','lists','calendar','ai'].forEach(t=>{
@@ -919,13 +921,14 @@ function switchTab(tab) {
   });
 }
 
+// FULL OPERATIONAL GEMINI-1.5-FLASH AI BACKGROUND SCRIPT INJECTED HERE
 async function loadAI() {
   const briefText = document.getElementById('aiBriefingText');
-  briefText.innerHTML = 'Analyzing system metadata details...';
+  briefText.innerHTML = '<div class="ai-loading"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div><span>Querying Gemini Neural Core...</span></div>';
   
   try {
     const pendingTasks = tasks.filter(t => !t.complete).map(t => `- [${t.cat}] ${t.task}`).join('\n');
-    const prompt = `Formulate a high-level concise personal 3-sentence summary focus breakdown for these tasks:\n${pendingTasks}`;
+    const prompt = `Formulate a concise, high-level personal 3-sentence action brief optimization breakdown based around the structural goals found inside this data container listing. Focus heavily on urgent metrics:\n${pendingTasks}`;
     
     const GEMINI_KEY = 'AIzaSyAPWUK9vBouKahIpYsiONo6sEJKHMNPJ2U';
     const response = await fetch(
@@ -940,10 +943,10 @@ async function loadAI() {
     );
     
     const data = await response.json();
-    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Unable to generate analysis.';
+    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'System unable to compute diagnostic analysis summary content.';
     briefText.textContent = resultText;
   } catch (e) {
-    briefText.textContent = 'API Error execution fault: ' + e.message;
+    briefText.textContent = 'API Error execution fault trace logged: ' + e.message;
   }
 }
 
