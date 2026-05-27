@@ -1459,7 +1459,7 @@ ${gmailData}
 
 Do two things:
 
-1. DAILY BRIEFING: Write a concise 3-5 sentence briefing. What should I focus on today? Any tasks connecting to calendar or emails? Any urgent items? Be specific, mention actual task names.
+1. DAILY BRIEFING: Write a concise 3-5 sentence briefing focused ONLY on today's emails and calendar. What emails need action? Any calendar events to prepare for? Do NOT mention tasks from the task list — only Gmail and Calendar content.
 
 2. GMAIL SUGGESTIONS: Up to 5 actionable tasks based on emails. Format exactly:
 SUGGEST: [Category] Task description | short reason | sender@domain.com
@@ -1628,19 +1628,30 @@ async function fetchGmailForAI() {
 }
 
 function parseAndRenderAI(text) {
-  const wrap=document.getElementById('aiWrap');
-  const lines=text.split('\n');
-  let briefing='';const suggestions=[];let inSug=false;
-  lines.forEach(line=>{if(line.startsWith('SUGGEST:')){inSug=true;const parts=line.replace('SUGGEST:','').trim().split('|');const taskPart=parts[0].trim();const reason=parts[1]?.trim()||'';const fromPart=parts[2]?.trim()||'';const catMatch=taskPart.match(/^\[(\w[\w\s-]*)\]\s*/);const cat=catMatch?catMatch[1]:'Other';const taskText=taskPart.replace(/^\[[\w\s-]+\]\s*/,'');suggestions.push({cat,task:taskText,reason,from:fromPart});}else if(!inSug&&line.trim()){briefing+=line+'\n';}});
-  let html=`<div class="ai-card"><div class="ai-card-title">✦ Daily Briefing <button class="btn-refresh" onclick="loadAI()" style="margin-left:auto">↻</button></div><div class="ai-briefing">${esc(briefing.trim())}</div></div>`;
-  // Filter out blocked senders
-  const filtered_sug = suggestions.filter(s => {
-    if (!s.from) return true;
-    return !blockedSenders.some(b => s.from.toLowerCase().includes(b.toLowerCase()));
+  // Only update the briefing card — don't touch the Gmail section below it
+  const briefingCard = document.getElementById('aiBriefingCard');
+  if (!briefingCard) return;
+
+  const lines = text.split('\n');
+  let briefing = ''; const suggestions = []; let inSug = false;
+  lines.forEach(line => {
+    if (line.startsWith('SUGGEST:')) {
+      inSug = true;
+      const parts = line.replace('SUGGEST:','').trim().split('|');
+      const taskPart = parts[0].trim();
+      const reason = parts[1]?.trim()||'';
+      const fromPart = parts[2]?.trim()||'';
+      const catMatch = taskPart.match(/^\[(\w[\w\s-]*)\]\s*/);
+      const cat = catMatch ? catMatch[1] : 'Other';
+      const taskText = taskPart.replace(/^\[[\w\s-]+\]\s*/,'');
+      suggestions.push({cat, task:taskText, reason, from:fromPart});
+    } else if (!inSug && line.trim()) { briefing += line + '\n'; }
   });
-  if(filtered_sug.length){html+=`<div class="ai-card"><div class="ai-card-title">Gmail Suggestions <span style="color:var(--text3);font-weight:500;font-size:10px">${filtered_sug.length} found · long-press to block</span></div>`;filtered_sug.forEach((s,i)=>{const color=getCatColor(s.cat);html+=`<div class="ai-suggestion" data-from="${esc(s.from||'')}" data-idx="${i}"><div class="ai-suggestion-body"><div class="ai-suggestion-text">${esc(s.task)}</div><div class="task-meta"><span class="cat-pill-tag" style="background:${color};color:${pillTextColor(color)};border:1px solid ${color}">${esc(s.cat)}</span><span class="ai-suggestion-meta">· ${esc(s.reason)}</span></div></div><button class="btn-add-sug" onclick="addSuggestion(${i})">+ Add</button><button class="btn-dismiss-sug" onclick="this.closest('.ai-suggestion').remove()">✕</button></div>`;});html+=`</div>`;}
-  aiSuggestions=suggestions;
-  wrap.innerHTML=html;
+
+  // Update briefing card content only
+  briefingCard.innerHTML = `<div class="ai-card-title">✦ Daily Briefing <button class="btn-refresh" onclick="loadAI()" style="margin-left:auto">↻</button></div><div class="ai-briefing">${esc(briefing.trim())}</div>`;
+
+  aiSuggestions = suggestions;
   setTimeout(setupSuggestionLongPress, 100);
 }
 
