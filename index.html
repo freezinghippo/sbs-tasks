@@ -1874,30 +1874,66 @@ function parseVoiceInput(transcript) {
   let text = transcript;
   let detectedCat = null;
   let detectedDate = null;
+  let detectedRecur = null;
 
-  // Parse category — "category finance" or "category: finance"
-  const catMatch = text.match(/category:?\s+(\w[\w\s-]*?)(?:\s+due|\s+date|$)/i);
-  if (catMatch) {
-    const spoken = catMatch[1].trim().toLowerCase();
-    const found = cats.find(c => c.name.toLowerCase().includes(spoken) || spoken.includes(c.name.toLowerCase()));
-    if (found) { detectedCat = found.name; text = text.replace(catMatch[0], '').trim(); }
-  }
-
-  // Parse date — "due june 3", "date june 3", "on the 5th", "next monday" etc
-  const months = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12,
-    jan:1,feb:2,mar:3,apr:4,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-  const dateMatch = text.match(/(?:due|date|on)?\s*(?:the\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?/i);
-  if (dateMatch) {
-    const month = months[dateMatch[1].toLowerCase()];
-    const day = parseInt(dateMatch[2]);
-    const year = new Date().getFullYear();
-    if (month && day) {
-      detectedDate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-      text = text.replace(dateMatch[0], '').trim();
+  // 1. Parse recur — "weekly", "daily", "monthly", "yearly" anywhere in text
+  const recurWords = {daily:'daily', weekly:'weekly', monthly:'monthly', yearly:'yearly',
+    'every day':'daily', 'every week':'weekly', 'every month':'monthly', 'every year':'yearly'};
+  for (const [phrase, val] of Object.entries(recurWords)) {
+    const re = new RegExp('\\b' + phrase + '\\b', 'i');
+    if (re.test(text)) {
+      detectedRecur = val;
+      text = text.replace(re, '').trim();
+      break;
     }
   }
 
-  // Also try "due the 5th" / "on the 12th"
+  // 2. Parse category — "category [name]" — must match an actual category name
+  const catMatch = text.match(/category:?\s+([\w\s-]+?)(?:\s+due|\s+date|\s+on|$)/i);
+  if (catMatch) {
+    const spoken = catMatch[1].trim().toLowerCase();
+    const found = cats.find(c => c.name.toLowerCase() === spoken ||
+      c.name.toLowerCase().includes(spoken) ||
+      spoken.includes(c.name.toLowerCase()));
+    if (found) {
+      detectedCat = found.name;
+      text = text.replace(catMatch[0].trim(), '').replace(/category:?/i,'').trim();
+    }
+  }
+
+  // 3. Parse "next monday/tuesday/..." 
+  const days = {sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6,
+    sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6};
+  const nextDayMatch = text.match(/next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)/i);
+  if (nextDayMatch) {
+    const target = days[nextDayMatch[1].toLowerCase()];
+    const now = new Date();
+    const current = now.getDay();
+    let diff = target - current;
+    if (diff <= 0) diff += 7;
+    const result = new Date(now);
+    result.setDate(now.getDate() + diff);
+    detectedDate = result.toISOString().split('T')[0];
+    text = text.replace(nextDayMatch[0], '').trim();
+  }
+
+  // 4. Parse "due/on june 3" style
+  if (!detectedDate) {
+    const months = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,
+      september:9,october:10,november:11,december:12,
+      jan:1,feb:2,mar:3,apr:4,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+    const dateMatch = text.match(/(?:due|date|on)?\s*(?:the\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)\s+(\d{1,2})(?:st|nd|rd|th)?/i);
+    if (dateMatch) {
+      const month = months[dateMatch[1].toLowerCase()];
+      const day = parseInt(dateMatch[2]);
+      if (month && day) {
+        detectedDate = `${new Date().getFullYear()}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        text = text.replace(dateMatch[0], '').trim();
+      }
+    }
+  }
+
+  // 5. Parse "the 5th / on the 12th"
   if (!detectedDate) {
     const ordMatch = text.match(/(?:due|on)?\s+(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)/i);
     if (ordMatch) {
@@ -1908,16 +1944,32 @@ function parseVoiceInput(transcript) {
     }
   }
 
-  // Clean up filler words
-  text = text.replace(/\s+/g,' ').replace(/^(and|with|for)\s+/i,'').trim();
+  // 6. Clean up
+  text = text.replace(/\bdue\b|\bdate\b|\bcategory\b/gi,'').replace(/\s+/g,' ').replace(/^(and|with|for)\s+/i,'').trim();
 
+  // 7. Apply all detected values
   document.getElementById('taskInput').value = text;
-  if (detectedCat) { selectedCatName = detectedCat; buildAddCatGrid(); showToast('Category: ' + detectedCat); }
+
+  if (detectedCat) {
+    selectedCatName = detectedCat;
+    buildAddCatGrid();
+  }
+  if (detectedRecur) {
+    selectedRecur = detectedRecur;
+    document.querySelectorAll('.recur-opt').forEach(el =>
+      el.classList.toggle('selected', el.dataset.val === detectedRecur));
+  }
   if (detectedDate) {
     document.getElementById('dueDateInput').value = detectedDate;
     updateDateDisplay();
-    showToast((detectedCat ? '' : '') + 'Date: ' + formatDate(detectedDate));
   }
+
+  // Show one combined toast
+  const parts = [];
+  if (detectedCat) parts.push('Cat: ' + detectedCat);
+  if (detectedRecur) parts.push('Repeat: ' + detectedRecur);
+  if (detectedDate) parts.push('Due: ' + formatDate(detectedDate));
+  if (parts.length) showToast(parts.join(' · '));
 }
 
 function initVoice() {
