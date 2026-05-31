@@ -537,6 +537,14 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 <div class="toast" id="toast"></div>
 
 <!-- SURE? CONFIRM MODAL -->
+<div class="sheet-overlay centered" id="dayDetailSheet" onclick="handleSheetClick(event,'dayDetailSheet')" style="z-index:450">
+  <div class="sheet">
+    <div class="sheet-title" style="margin-top:4px;font-size:16px">Day View</div>
+    <div id="dayDetailContent"></div>
+    <button onclick="closeSheet('dayDetailSheet')" style="width:100%;margin-top:16px;padding:11px;border-radius:11px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:Inter,sans-serif;font-weight:700;font-size:14px;cursor:pointer">Close</button>
+  </div>
+</div>
+
 <div class="sheet-overlay" id="confirmSheet" onclick="handleSheetClick(event,'confirmSheet')" style="z-index:500">
   <div class="sheet" style="padding-bottom:28px">
     <div class="sheet-handle"></div>
@@ -1158,6 +1166,8 @@ function renderCompleted() {
 
 function renderTodayBanner() {
   const el = document.getElementById('todayBanner'); if(!el) return;
+  el.innerHTML = ''; return; // disabled — too much space
+  // eslint-disable-next-line
   const today = new Date().toISOString().split('T')[0];
   const pending = tasks.filter(t=>!t.complete);
   const overdue = pending.filter(t=>t.due && t.due < today);
@@ -1216,7 +1226,6 @@ function renderDateFilters() {
       <div class="df-pill-num">${counts[f.key]}</div>
       <div class="df-pill-label">${f.label}</div>
     </div>`).join('');
-  renderTodayBanner();
 }
 
 function setDateFilter(key) {
@@ -1851,7 +1860,7 @@ function renderMonthGrid() {
     if (evCount) dots += `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#FF8C00;margin:1px"></span>`;
     if (tkCount) dots += `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin:1px"></span>`;
     const count = evCount + tkCount;
-    cells += `<div style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;${isToday?'background:var(--accent);':''}${count?'border:1px solid var(--border);':''}position:relative">
+    cells += `<div onclick="openDayDetail('${dateStr}')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;cursor:pointer;${isToday?'background:var(--accent);':''}${count?'border:1px solid var(--border);':''}position:relative">
       <span style="font-size:13px;font-weight:${isToday?'800':'500'};color:${isToday?'white':'var(--text)'}">${day}</span>
       ${count?`<div style="display:flex">${dots}</div>`:''}
       ${count>0?`<span style="font-size:8px;color:${isToday?'white':'var(--text3)'};font-weight:700">${count}</span>`:''}
@@ -1869,6 +1878,70 @@ function renderMonthGrid() {
       <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#FF8C00"></span>Events</span>
       <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></span>Tasks due</span>
     </div>`;
+}
+
+let dayDetailDate = null;
+
+function openDayDetail(dateStr) {
+  dayDetailDate = dateStr;
+  renderDayDetail();
+  document.getElementById('dayDetailSheet').classList.add('open');
+}
+
+function shiftDayDetail(delta) {
+  const d = new Date(dayDetailDate + 'T12:00:00');
+  d.setDate(d.getDate() + delta);
+  dayDetailDate = d.toISOString().split('T')[0];
+  renderDayDetail();
+}
+
+function renderDayDetail() {
+  const dateStr = dayDetailDate;
+  const d = new Date(dateStr + 'T12:00:00');
+  const label = d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+
+  // Events that day
+  const dayEvents = calendarEvents.filter(ev => {
+    const start = ev.start.dateTime || ev.start.date;
+    return new Date(start).toISOString().split('T')[0] === dateStr;
+  });
+  // Tasks due that day
+  const dayTasks = tasks.filter(t => !t.complete && t.due === dateStr);
+
+  let body = '';
+  if (dayEvents.length) {
+    body += '<div style="font-size:10px;font-weight:800;color:#FF8C00;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Events</div>';
+    dayEvents.forEach(ev => {
+      const start = ev.start.dateTime;
+      const time = start ? new Date(start).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}) : 'All day';
+      const c = ev._calColor || '#FF8C00';
+      body += `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;color:var(--text);font-weight:600">${esc(ev.summary||'(no title)')}</div>
+        <div style="font-size:11px;color:${c};font-weight:600;margin-top:2px">${time}${ev._calName?' · '+esc(ev._calName):''}</div>
+      </div>`;
+    });
+  }
+  if (dayTasks.length) {
+    body += '<div style="font-size:10px;font-weight:800;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin:12px 0 8px">Tasks Due</div>';
+    dayTasks.forEach(t => {
+      const color = getCatColor(t.cat);
+      body += `<div onclick="closeSheet('dayDetailSheet');openDetail(${t.id})" style="padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer">
+        <div style="font-size:13px;color:var(--text);font-weight:500">${esc(t.task)}</div>
+        <span class="cat-pill-tag" style="background:${color};color:${pillTextColor(color)};margin-top:4px;display:inline-block">${esc(t.cat)}</span>
+      </div>`;
+    });
+  }
+  if (!dayEvents.length && !dayTasks.length) {
+    body = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:24px 0">Nothing scheduled</div>';
+  }
+
+  document.getElementById('dayDetailContent').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <button onclick="shiftDayDetail(-1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:18px">‹</button>
+      <span style="font-size:15px;font-weight:800;text-align:center">${label}</span>
+      <button onclick="shiftDayDetail(1)" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:18px">›</button>
+    </div>
+    ${body}`;
 }
 
 async function createDailyBriefingEvent(testMode) {
