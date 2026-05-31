@@ -160,6 +160,10 @@ body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); 
 .sheet-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); z-index:200; display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity 0.25s; }
 .sheet-overlay.open { opacity:1; pointer-events:all; }
 .sheet { width:100%; background:var(--surface); border-radius:24px 24px 0 0; padding:18px 18px calc(18px + var(--safe-bottom)); border-top:1px solid var(--border); transform:translateY(100%); transition:transform 0.3s cubic-bezier(0.4,0,0.2,1); max-height:88dvh; overflow-y:auto; scrollbar-width:none; }
+/* Centered popup variant */
+.sheet-overlay.centered { align-items:center; justify-content:center; padding:20px; }
+.sheet-overlay.centered .sheet { width:100%; max-width:420px; border-radius:20px; border:1px solid var(--border); transform:scale(0.92); opacity:0; transition:transform 0.25s cubic-bezier(0.4,0,0.2,1), opacity 0.25s; max-height:90dvh; padding:18px; }
+.sheet-overlay.centered.open .sheet { transform:scale(1); opacity:1; }
 .sheet::-webkit-scrollbar { display:none; }
 .sheet-overlay.open .sheet { transform:translateY(0); }
 .sheet-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:0 auto 16px; }
@@ -393,6 +397,10 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
       <div class="drawer-icon" style="background:rgba(108,255,184,0.1)">✓</div>
       <div><div class="drawer-item-title">Completed</div><div class="drawer-item-sub" id="drawerCompCount">0 tasks done</div></div>
     </div>
+    <div class="drawer-item" onclick="openTrends()">
+      <div class="drawer-icon" style="background:rgba(108,255,184,0.1)">📈</div>
+      <div><div class="drawer-item-title">Trends</div><div class="drawer-item-sub">Charts & insights</div></div>
+    </div>
     <div class="drawer-item" onclick="openSettings()">
       <div class="drawer-icon" style="background:rgba(124,108,255,0.1)">⚙</div>
       <div><div class="drawer-item-title">Settings</div><div class="drawer-item-sub">Categories, preferences</div></div>
@@ -407,10 +415,9 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 </div>
 
 <!-- ADD TASK SHEET -->
-<div class="sheet-overlay" id="addTaskSheet" onclick="handleSheetClick(event,'addTaskSheet')">
+<div class="sheet-overlay centered" id="addTaskSheet" onclick="handleSheetClick(event,'addTaskSheet')">
   <div class="sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title">New Task</div>
+    <div class="sheet-title" style="margin-top:4px">New Task</div>
     <div class="form-group">
       <label class="form-label">Task</label>
       <div class="voice-row">
@@ -427,13 +434,10 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
       <input class="form-input" id="notesInput" placeholder="extra details...">
     </div>
     <div class="form-group">
-      <label class="form-label">Repeat</label>
-      <div class="recur-row" id="recurRow">
-        <div class="recur-opt selected" data-val="none" onclick="selectRecur('none',this)">Never</div>
-        <div class="recur-opt" data-val="daily" onclick="selectRecur('daily',this)">Daily</div>
-        <div class="recur-opt" data-val="weekly" onclick="selectRecur('weekly',this)">Weekly</div>
-        <div class="recur-opt" data-val="monthly" onclick="selectRecur('monthly',this)">Monthly</div>
-        <div class="recur-opt" data-val="yearly" onclick="selectRecur('yearly',this)">Yearly</div>
+      <label class="form-label">Priority</label>
+      <div style="display:flex;gap:10px;align-items:center;background:var(--bg);border:1.5px solid var(--border);border-radius:11px;padding:11px 13px">
+        <input type="checkbox" id="importantInput" style="width:20px;height:20px;accent-color:var(--accent2)">
+        <label for="importantInput" style="font-size:13px;color:var(--text2);font-weight:600">★ Flag as High Priority</label>
       </div>
     </div>
     <div class="bottom-action-row">
@@ -443,6 +447,16 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
         <input type="date" id="dueDateInput" class="date-input-hidden" onchange="updateDateDisplay()">
       </div>
       <button class="btn-primary" onclick="addTask()">Add Task</button>
+    </div>
+    <div class="form-group" style="margin-top:14px;margin-bottom:0">
+      <label class="form-label">Repeat</label>
+      <div class="recur-row" id="recurRow">
+        <div class="recur-opt selected" data-val="none" onclick="selectRecur('none',this)">Never</div>
+        <div class="recur-opt" data-val="daily" onclick="selectRecur('daily',this)">Daily</div>
+        <div class="recur-opt" data-val="weekly" onclick="selectRecur('weekly',this)">Weekly</div>
+        <div class="recur-opt" data-val="monthly" onclick="selectRecur('monthly',this)">Monthly</div>
+        <div class="recur-opt" data-val="yearly" onclick="selectRecur('yearly',this)">Yearly</div>
+      </div>
     </div>
 
   </div>
@@ -499,6 +513,18 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 </div>
 
 <!-- SETTINGS SUBPAGE -->
+<div class="subpage" id="trendsPage">
+  <div class="subpage-header">
+    <div class="back-btn" onclick="closePage('trendsPage')">← Back</div>
+    <div class="subpage-title">📈 Trends</div>
+    <span></span>
+  </div>
+  <div style="padding:8px 18px 0;flex-shrink:0">
+    <div class="filter-scroll" id="trendsFilterScroll" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px"></div>
+  </div>
+  <div class="settings-wrap" id="trendsWrap"></div>
+</div>
+
 <div class="subpage" id="settingsPage">
   <div class="subpage-header">
     <div class="back-btn" onclick="closePage('settingsPage')">← Back</div>
@@ -675,6 +701,186 @@ function restoreAutoBackup() {
   } catch(e) { showToast('Could not restore backup'); }
 }
 
+let trendsFilter = null;
+
+function openTrends() {
+  closeDrawer();
+  buildTrendsFilters();
+  renderTrends();
+  document.getElementById('trendsPage').classList.add('open');
+}
+
+function buildTrendsFilters() {
+  const scroll = document.getElementById('trendsFilterScroll'); if(!scroll) return;
+  scroll.innerHTML = '';
+  const all = document.createElement('button');
+  all.className = 'pill' + (trendsFilter===null?' active-all':'');
+  all.textContent = 'All';
+  all.onclick = () => { trendsFilter = null; buildTrendsFilters(); renderTrends(); };
+  scroll.appendChild(all);
+  cats.forEach(c => {
+    const p = document.createElement('button');
+    p.className = 'pill' + (trendsFilter===c.name?' active':'');
+    p.style.cssText = trendsFilter===c.name ? `background:${c.color};color:#0d0d15;border-color:transparent` : '';
+    p.textContent = c.name;
+    p.onclick = () => { trendsFilter = trendsFilter===c.name?null:c.name; buildTrendsFilters(); renderTrends(); };
+    scroll.appendChild(p);
+  });
+}
+
+function renderTrends() {
+  const wrap = document.getElementById('trendsWrap'); if(!wrap) return;
+  const pool = trendsFilter ? tasks.filter(t=>t.cat===trendsFilter) : tasks;
+  const now = Date.now();
+  const DAY = 86400000;
+
+  // Build 12 weeks of data
+  const weeks = 12;
+  const createdPerWeek = new Array(weeks).fill(0);
+  const completedPerWeek = new Array(weeks).fill(0);
+  pool.forEach(t => {
+    const cw = Math.floor((now - t.created)/(DAY*7));
+    if (cw >= 0 && cw < weeks) createdPerWeek[weeks-1-cw]++;
+    if (t.complete && t.completedAt) {
+      const compW = Math.floor((now - new Date(t.completedAt).getTime())/(DAY*7));
+      if (compW >= 0 && compW < weeks) completedPerWeek[weeks-1-compW]++;
+    }
+  });
+
+  // Open tasks over time (cumulative created - completed, week by week)
+  const openOverTime = [];
+  let runningOpen = 0;
+  for (let w=0; w<weeks; w++){ runningOpen += createdPerWeek[w]-completedPerWeek[w]; openOverTime.push(Math.max(0,runningOpen)); }
+
+  // Net flow this week
+  const addedThisWeek = createdPerWeek[weeks-1];
+  const compThisWeek = completedPerWeek[weeks-1];
+  const net = addedThisWeek - compThisWeek;
+
+  // Completion rate
+  const total = pool.length;
+  const done = pool.filter(t=>t.complete).length;
+  const rate = total ? Math.round(done/total*100) : 0;
+
+  const openNow = pool.filter(t=>!t.complete).length;
+  const avgComp = (completedPerWeek.reduce((a,b)=>a+b,0)/weeks).toFixed(1);
+
+  wrap.innerHTML = `
+    ${netFlowCard(createdPerWeek, completedPerWeek, net, addedThisWeek, compThisWeek)}
+    ${lineCard('Open Tasks Over Time', openNow, 'open right now', openOverTime, '#7c6cff')}
+    ${rateCard(rate, done, total)}
+    ${barCard('Completed Per Week', compThisWeek, 'this week · avg '+avgComp+'/wk', completedPerWeek)}
+    ${agingCard(pool)}
+  `;
+}
+
+function netFlowCard(created, completed, net, added, comp) {
+  const max = Math.max(...created, ...completed, 1);
+  const w = 360, h = 110, n = created.length;
+  const bw = (w/n) * 0.35;
+  let bars = '';
+  for (let i=0;i<n;i++){
+    const x = (i/n)*w;
+    const ch = (created[i]/max)*h;
+    const coh = (completed[i]/max)*h;
+    bars += `<rect x="${x}" y="${h-ch}" width="${bw}" height="${ch}" fill="#ff6c9d" opacity="0.7" rx="2"/>`;
+    bars += `<rect x="${x+bw+2}" y="${h-coh}" width="${bw}" height="${coh}" fill="#6cffb8" opacity="0.85" rx="2"/>`;
+  }
+  return `<div class="ai-card">
+    <div class="ai-card-title" style="margin-bottom:4px">Net Flow · This Week</div>
+    <div style="font-size:28px;font-weight:900;color:${net>0?'var(--accent2)':'var(--accent3)'}">${net>0?'+':''}${net}</div>
+    <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:12px">${added} added · ${comp} completed — list ${net>0?'growing':'shrinking'}</div>
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:110px">${bars}</svg>
+    <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--text2);font-weight:600">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:3px;border-radius:2px;background:#ff6c9d;display:inline-block"></span>Added</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:3px;border-radius:2px;background:#6cffb8;display:inline-block"></span>Completed</span>
+    </div>
+  </div>`;
+}
+
+function lineCard(title, bignum, sub, data, color) {
+  const max = Math.max(...data, 1);
+  const w = 360, h = 100, n = data.length;
+  let pts = data.map((v,i)=>`${(i/(n-1))*w},${h-(v/max)*h}`).join(' ');
+  const areaPts = pts + ` ${w},${h} 0,${h}`;
+  return `<div class="ai-card">
+    <div class="ai-card-title" style="margin-bottom:4px">${title}</div>
+    <div style="font-size:28px;font-weight:900;color:${color}">${bignum}</div>
+    <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:12px">${sub}</div>
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100px">
+      <polygon points="${areaPts}" fill="${color}" opacity="0.12"/>
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>
+    </svg>
+  </div>`;
+}
+
+function rateCard(rate, done, total) {
+  return `<div class="ai-card">
+    <div class="ai-card-title" style="margin-bottom:4px">Completion Rate</div>
+    <div style="font-size:28px;font-weight:900;color:var(--accent3)">${rate}%</div>
+    <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:12px">${done} of ${total} tasks completed</div>
+    <div style="height:10px;background:var(--surface2);border-radius:5px;overflow:hidden">
+      <div style="height:100%;width:${rate}%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:5px"></div>
+    </div>
+  </div>`;
+}
+
+function barCard(title, bignum, sub, data) {
+  const max = Math.max(...data, 1);
+  const w = 360, h = 90, n = data.length;
+  const bw = (w/n)*0.6;
+  let bars = '';
+  for (let i=0;i<n;i++){
+    const x = (i/n)*w + (w/n-bw)/2;
+    const bh = (data[i]/max)*h;
+    const isLast = i===n-1;
+    bars += `<rect x="${x}" y="${h-bh}" width="${bw}" height="${bh}" fill="${isLast?'#6cffb8':'#7c6cff'}" opacity="${isLast?'0.9':'0.55'}" rx="3"/>`;
+  }
+  return `<div class="ai-card">
+    <div class="ai-card-title" style="margin-bottom:4px">${title}</div>
+    <div style="font-size:28px;font-weight:900">${bignum}</div>
+    <div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:12px">${sub}</div>
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:90px">${bars}</svg>
+  </div>`;
+}
+
+function agingCard(pool) {
+  const open = pool.filter(t=>!t.complete);
+  const buckets = {'<1wk':0,'1-4wk':0,'1-3mo':0,'3mo+':0};
+  open.forEach(t=>{
+    const days = (Date.now()-t.created)/86400000;
+    if (days<7) buckets['<1wk']++;
+    else if (days<30) buckets['1-4wk']++;
+    else if (days<90) buckets['1-3mo']++;
+    else buckets['3mo+']++;
+  });
+  const max = Math.max(...Object.values(buckets),1);
+  const colors = ['#6cffb8','#ffd166','#ffaa44','#ff6b6b'];
+  let rows = Object.entries(buckets).map(([label,val],i)=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="font-size:11px;color:var(--text2);font-weight:600;width:48px">${label}</span>
+      <div style="flex:1;height:18px;background:var(--surface2);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${(val/max)*100}%;background:${colors[i]};border-radius:4px"></div>
+      </div>
+      <span style="font-size:11px;color:var(--text);font-weight:700;width:24px;text-align:right">${val}</span>
+    </div>`).join('');
+  return `<div class="ai-card">
+    <div class="ai-card-title" style="margin-bottom:12px">How Old Are Open Tasks?</div>
+    ${rows}
+  </div>`;
+}
+
+function timeAgo(ts) {
+  if (!ts) return '';
+  const days = Math.floor((Date.now() - ts) / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return '1d ago';
+  if (days < 7) return days + 'd ago';
+  if (days < 30) return Math.floor(days/7) + 'w ago';
+  if (days < 365) return Math.floor(days/30) + 'mo ago';
+  return Math.floor(days/365) + 'y ago';
+}
+
 function pillTextColor(hex) {
   try {
     const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
@@ -692,7 +898,13 @@ function init() {
       ...t
     }));
   } else {
-    tasks = SEED.map((s,i)=>({id:Date.now()+i,cat:s.cat,task:s.task,due:s.due||null,notes:'',complete:false,created:Date.now()-(SEED.length-i)*1000,completedAt:null}));
+    tasks = SEED.map((s,i)=>{
+      const daysAgo = Math.floor(Math.random()*90);
+      const created = Date.now() - daysAgo*86400000;
+      const isComplete = Math.random() < 0.4;
+      const completedAt = isComplete ? new Date(created + Math.random()*(Date.now()-created)).toISOString() : null;
+      return {id:Date.now()+i,cat:s.cat,task:s.task,due:s.due||null,notes:'',important:false,complete:isComplete,created,completedAt,recur:'none',subtasks:[]};
+    });
     save();
   }
   const tok = localStorage.getItem('sbt_token');
@@ -891,7 +1103,7 @@ function taskRow(t, today) {
   return `<div class="task-item" data-id="${t.id}" onclick="openDetail(${t.id})">
     <div class="task-body">
       <div class="task-text">${esc(t.task)}</div>
-      <div class="task-meta"><span class="cat-pill-tag" style="background:${color};color:${pillTextColor(color)};border:1px solid ${color}">${esc(t.cat)}</span>${t.important?'<span class="due-badge" style="background:rgba(255,108,157,0.12);color:var(--accent2);border:1px solid rgba(255,108,157,0.3)">★ CRITICAL</span>':''}${dueHtml}${t.recur&&t.recur!=='none'?'<span class="recur-badge">🔄 '+t.recur+'</span>':''}${(t.subtasks&&t.subtasks.length)?'<span class="subtask-indicator">'+t.subtasks.filter(s=>s.done).length+'/'+t.subtasks.length+' ✓</span>':''}</div>
+      <div class="task-meta"><span class="cat-pill-tag" style="background:${color};color:${pillTextColor(color)};border:1px solid ${color}">${esc(t.cat)}</span>${t.important?'<span class="due-badge" style="background:rgba(255,108,157,0.12);color:var(--accent2);border:1px solid rgba(255,108,157,0.3)">★ CRITICAL</span>':''}${dueHtml}${t.recur&&t.recur!=='none'?'<span class="recur-badge">🔄 '+t.recur+'</span>':''}${(t.subtasks&&t.subtasks.length)?'<span class="subtask-indicator">'+t.subtasks.filter(s=>s.done).length+'/'+t.subtasks.length+' ✓</span>':''}<span style="font-size:9px;color:var(--text3);font-weight:500">${timeAgo(t.created)}</span></div>
     </div>
     <div class="complete-btn" id="cbtn-${t.id}" onclick="event.stopPropagation();completeTask(${t.id})" title="Mark complete">✓</div>
   </div>`;
@@ -1019,9 +1231,16 @@ function undoTask(id) {
   save();
   renderTasks();
   renderDateFilters();
-  // If completed page is open, re-render it too
   if (document.getElementById('completedPage').classList.contains('open')) renderCompleted();
-  showToast('Task restored ✓');
+  // Blink the restored task yellow
+  setTimeout(() => {
+    const row = document.querySelector('.task-item[data-id="'+id+'"]');
+    if (row) {
+      row.style.transition = 'background 0.3s';
+      row.style.background = 'rgba(255,224,102,0.25)';
+      setTimeout(() => { row.style.background = ''; }, 800);
+    }
+  }, 60);
 }
 
 function deleteTask(id) {
@@ -1143,6 +1362,7 @@ function openAddTask() {
   document.getElementById('notesInput').value='';
   document.getElementById('dueDateInput').value='';
   document.getElementById('datePickerText').textContent='Pick a date';
+  const imp = document.getElementById('importantInput'); if(imp) imp.checked=false;
   selectedRecur='none';
   document.querySelectorAll('.recur-opt').forEach(el=>el.classList.toggle('selected',el.dataset.val==='none'));
   buildAddCatGrid();
@@ -1173,7 +1393,8 @@ function addTask() {
   if (!text) { showToast('Enter a task name'); return; }
   const due = document.getElementById('dueDateInput').value || null;
   const notes = document.getElementById('notesInput').value.trim();
-  tasks.unshift({id:Date.now(),cat:selectedCatName,task:text,due,notes,complete:false,created:Date.now(),completedAt:null,recur:selectedRecur,subtasks:[]});
+  const important = document.getElementById('importantInput').checked;
+  tasks.unshift({id:Date.now(),cat:selectedCatName,task:text,due,notes,important,complete:false,created:Date.now(),completedAt:null,recur:selectedRecur,subtasks:[]});
   save(); closeSheet('addTaskSheet'); renderTasks(); showToast('Added to '+selectedCatName);
   // Remove corresponding Gmail row if added from email
   if (window._pendingEmailIdx !== undefined) {
@@ -1288,7 +1509,12 @@ function renderSettings() {
       </div>
       ${localStorage.getItem('sbt_auto_backup') ? `<button onclick="restoreAutoBackup()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1.5px solid var(--border);color:var(--text2);background:transparent;font-family:Inter,sans-serif;font-weight:700;font-size:12px;cursor:pointer">↩ Restore Auto-Backup (${localStorage.getItem('sbt_last_backup')||'unknown date'})</button>` : '<div style="font-size:11px;color:var(--text3);margin-top:8px">Auto-backup will run when you open the app tomorrow.</div>'}
     </div>
-    <div style="margin-top:0" class="settings-section-title">Data</div>
+    <div style="margin-top:16px" class="settings-section-title">Testing</div>
+    <div class="btn-danger" style="background:rgba(124,108,255,0.06);border-color:rgba(124,108,255,0.25);margin-bottom:8px" onclick="randomizeDates()">
+      <div class="settings-icon" style="background:rgba(124,108,255,0.15)">🎲</div>
+      <div><div class="btn-danger-text" style="color:var(--accent)">Randomize Dates (Testing)</div><div class="btn-danger-sub">Spread creation + due dates over 90 days to test charts</div></div>
+    </div>
+    <div style="margin-top:16px" class="settings-section-title">Data</div>
     <div class="btn-danger" onclick="clearCompleted()">
       <div class="settings-icon" style="background:rgba(255,51,85,0.1)">🗑</div>
       <div><div class="btn-danger-text">Clear All Completed</div><div class="btn-danger-sub">Permanently remove ${compCount} completed tasks</div></div>
@@ -1354,6 +1580,26 @@ function unblockKeyword(i) {
   blockedKeywords.splice(i,1);
   localStorage.setItem('sbt_blocked_keywords', JSON.stringify(blockedKeywords));
   renderSettings(); showToast('Keyword unblocked');
+}
+
+function randomizeDates() {
+  tasks.forEach(t => {
+    // Creation: random over past 90 days
+    const createdDaysAgo = Math.floor(Math.random()*90);
+    t.created = Date.now() - createdDaysAgo*86400000;
+    // Due date: random 1-90 days from NOW (some past = overdue, some future)
+    const dueDaysOut = Math.floor(Math.random()*90) - 15; // -15 to +75, so some overdue
+    const dueDate = new Date(Date.now() + dueDaysOut*86400000);
+    t.due = dueDate.toISOString().split('T')[0];
+    // If complete, set a completedAt sometime after creation
+    if (t.complete) {
+      t.completedAt = new Date(t.created + Math.random()*(Date.now()-t.created)).toISOString();
+    }
+  });
+  save();
+  renderTasks(); renderStats(); buildFilters();
+  showToast('🎲 Dates randomized across 90 days');
+  closePage('settingsPage');
 }
 
 function clearCompleted() {
@@ -1979,17 +2225,26 @@ function initVoice() {
   if(!SR){document.getElementById('voiceBtn').style.opacity='0.3';return;}
   recognition=new SR();recognition.continuous=true;recognition.interimResults=true;recognition.lang='en-US';recognition.maxAlternatives=1;
   recognition.onresult=e=>{
-    // Collect full transcript but only show live text in the input, don't parse yet
-    const transcript = Array.from(e.results).map(r=>r[0].transcript).join(' ').trim();
-    window._voiceTranscript = transcript;
-    document.getElementById('taskInput').value = transcript;
+    // Only use FINAL results to avoid duplicate/interim word pileup
+    let finalText = '';
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+    }
+    // Show interim too but only the latest interim piece
+    let interim = '';
+    for (let i = 0; i < e.results.length; i++) {
+      if (!e.results[i].isFinal) interim = e.results[i][0].transcript;
+    }
+    window._voiceTranscript = finalText.trim();
+    document.getElementById('taskInput').value = (finalText + interim).trim();
   };
   recognition.onend=()=>{
     isListening=false;
     document.getElementById('voiceBtn').classList.remove('listening');
-    // Parse the FULL transcript once recording stops
-    if (window._voiceTranscript) {
-      parseVoiceInput(window._voiceTranscript);
+    // Parse whatever we captured — prefer final transcript, fall back to input field
+    const toParse = window._voiceTranscript || document.getElementById('taskInput').value.trim();
+    if (toParse) {
+      parseVoiceInput(toParse);
       window._voiceTranscript = '';
     }
   };
@@ -2022,20 +2277,20 @@ function showUndoToast(taskId){
   const toast = document.getElementById('toast');
   clearTimeout(toast._timer);
   toast.innerHTML = '';
-  const btn = document.createElement('span');
+  const btn = document.createElement('button');
   btn.textContent = '↩ Undo';
-  btn.style.cssText = 'background:var(--accent);color:white;padding:10px 22px;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;display:inline-block';
-  const doUndo = function(e) {
-    e.stopPropagation(); e.preventDefault();
+  btn.type = 'button';
+  btn.style.cssText = 'background:var(--accent);color:white;padding:10px 22px;border-radius:8px;font-weight:800;font-size:14px;cursor:pointer;border:none;font-family:Inter,sans-serif;pointer-events:auto';
+  btn.onclick = function(e) {
+    if(e){ e.stopPropagation(); e.preventDefault(); }
     undoTask(taskId);
     toast.classList.remove('show');
     clearTimeout(toast._timer);
+    return false;
   };
-  btn.addEventListener('click', doUndo);
-  btn.addEventListener('touchend', doUndo);
   toast.appendChild(btn);
   toast.classList.add('show');
-  toast._timer = setTimeout(() => { toast.classList.remove('show'); }, 4400);
+  toast._timer = setTimeout(() => { toast.classList.remove('show'); }, 5000);
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeSheet('addTaskSheet');closeSheet('newCatSheet');closeDrawer();}});
