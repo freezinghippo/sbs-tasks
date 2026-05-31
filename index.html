@@ -897,6 +897,18 @@ function init() {
       important: false, recur: 'none', subtasks: [],
       ...t
     }));
+    // ONE-TIME: populate test dates on existing tasks (runs once, then never again)
+    if (!localStorage.getItem('sbt_dates_seeded')) {
+      tasks.forEach(t => {
+        const createdDaysAgo = Math.floor(Math.random()*90);
+        t.created = Date.now() - createdDaysAgo*86400000;
+        const dueDaysOut = Math.floor(Math.random()*90) - 15;
+        t.due = new Date(Date.now() + dueDaysOut*86400000).toISOString().split('T')[0];
+        if (t.complete) t.completedAt = new Date(t.created + Math.random()*(Date.now()-t.created)).toISOString();
+      });
+      localStorage.setItem('sbt_dates_seeded', '1');
+      save();
+    }
   } else {
     tasks = SEED.map((s,i)=>{
       const daysAgo = Math.floor(Math.random()*90);
