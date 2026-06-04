@@ -332,7 +332,7 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 
 <!-- HEADER -->
 <div class="header">
-  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v9</span></div>
+  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v10</span></div>
   <div class="header-right">
     <span class="task-count" id="taskCount">0 tasks</span>
     <div class="btn-icon" onclick="openDrawer()">☰</div>
@@ -409,6 +409,10 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
     <div class="drawer-item" onclick="openCompleted()">
       <div class="drawer-icon" style="background:rgba(108,255,184,0.1)">✓</div>
       <div><div class="drawer-item-title">Completed</div><div class="drawer-item-sub" id="drawerCompCount">0 tasks done</div></div>
+    </div>
+    <div class="drawer-item" onclick="openTaskSync()">
+      <div class="drawer-icon" style="background:rgba(108,255,184,0.1)">☁</div>
+      <div><div class="drawer-item-title">Cloud Sync</div><div class="drawer-item-sub" id="drawerSyncStatus">Share across devices</div></div>
     </div>
     <div class="drawer-item" onclick="openTrends()">
       <div class="drawer-icon" style="background:rgba(108,255,184,0.1)">📈</div>
@@ -569,6 +573,23 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
     <svg viewBox="0 0 150 12" style="width:100%;height:12px"><path d="M2 6 Q12 9 24 5 T46 8 Q60 4 72 7 T94 6 L118 7 L130 6" fill="none" stroke="#3a3a52" stroke-width="2.5" stroke-linecap="round" class="hw" style="animation-delay:1.36s"/></svg>
     <div class="scan-line"></div>
     <div class="scan-label">Reading your list...</div>
+  </div>
+</div>
+
+<div class="sheet-overlay centered" id="taskSyncOverlay" onclick="handleSheetClick(event,'taskSyncOverlay')" style="z-index:480">
+  <div class="sheet">
+    <div style="font-size:17px;font-weight:900;color:var(--text);margin-bottom:6px;text-align:center">☁ Cloud Sync</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:16px;text-align:center">Enter the same code on each device to share one task list. Survives cache clears and syncs across phone, laptop, and tablet.</div>
+    <input class="form-input" id="taskSyncInput" placeholder="your-sync-code" style="margin-bottom:10px;text-align:center" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button onclick="generateTaskSyncCode()" style="flex:1;padding:11px;border-radius:11px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:Inter,sans-serif;font-weight:700;font-size:13px;cursor:pointer">🎲 Generate</button>
+      <button onclick="connectTaskSync()" style="flex:1;padding:11px;border-radius:11px;border:none;background:var(--accent3);color:#0d0d15;font-family:Inter,sans-serif;font-weight:800;font-size:13px;cursor:pointer">Connect</button>
+    </div>
+    <div id="taskSyncInfo" style="font-size:11px;color:var(--text3);text-align:center;line-height:1.6;margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px">
+      <button onclick="closeTaskSync()" style="flex:1;padding:11px;border-radius:11px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:Inter,sans-serif;font-weight:700;font-size:13px;cursor:pointer">Close</button>
+      <button id="taskSyncDisconnectBtn" style="flex:1;display:none;padding:11px;border-radius:11px;border:1px solid rgba(255,51,85,0.3);background:transparent;color:#ff3355;font-family:Inter,sans-serif;font-weight:700;font-size:13px;cursor:pointer" onclick="disconnectTaskSync()">Disconnect</button>
+    </div>
   </div>
 </div>
 
@@ -1008,9 +1029,17 @@ function init() {
   localStorage.setItem('sbt_dismissed_emails', JSON.stringify(dismissedEmails));
   renderTasks(); renderStats(); buildAddCatGrid(); buildColorPicker(); initVoice(); loadGoogleAPI(); setupSwipe(); setupCompSwipe();
   autoBackup();
+  if (taskSyncCode) { updateTaskSyncDrawerStatus(); taskSyncNow(false); }
 }
 
-function save() { localStorage.setItem('sbt_tasks',JSON.stringify(tasks)); }
+function save() { localStorage.setItem('sbt_tasks',JSON.stringify(tasks)); scheduleSyncPush(); }
+
+let _syncTimer = null;
+function scheduleSyncPush() {
+  if (!taskSyncCode) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => { taskSyncNow(false); }, 1500);
+}
 function saveCats() { localStorage.setItem('sbt_cats',JSON.stringify(cats)); }
 function getCatColor(name) { return cats.find(c=>c.name===name)?.color || '#888'; }
 
@@ -1583,6 +1612,117 @@ function closeSheet(id) { document.getElementById(id).classList.remove('open'); 
 function handleSheetClick(e, id) { if(e.target===document.getElementById(id)) closeSheet(id); }
 function openDrawer() { document.getElementById('drawerOverlay').classList.add('open'); document.getElementById('drawerCompCount').textContent=tasks.filter(t=>t.complete).length+' tasks done'; }
 function closeDrawer() { document.getElementById('drawerOverlay').classList.remove('open'); }
+
+// ---- CLOUD SYNC (matches SB's Reads pattern) ------------------------------
+const TASK_WORKER = 'https://sbs-reads-worker.steveblekaitis.workers.dev';
+let taskSyncCode = localStorage.getItem('sbt_synccode') || null;
+let taskSyncing = false;
+
+function openTaskSync() {
+  closeDrawer();
+  document.getElementById('taskSyncInput').value = taskSyncCode || '';
+  updateTaskSyncInfo();
+  document.getElementById('taskSyncOverlay').classList.add('open');
+}
+function closeTaskSync() { document.getElementById('taskSyncOverlay').classList.remove('open'); }
+
+function updateTaskSyncDrawerStatus() {
+  const el = document.getElementById('drawerSyncStatus');
+  if (el) el.textContent = taskSyncCode ? ('On · ' + taskSyncCode) : 'Share across devices';
+}
+function updateTaskSyncInfo() {
+  const info = document.getElementById('taskSyncInfo');
+  const dis = document.getElementById('taskSyncDisconnectBtn');
+  if (taskSyncCode) {
+    info.innerHTML = 'Connected as <b style="color:var(--accent3)">' + esc(taskSyncCode) + '</b><br>Enter this same code on your other devices.';
+    if (dis) dis.style.display = 'block';
+  } else {
+    info.textContent = '';
+    if (dis) dis.style.display = 'none';
+  }
+  updateTaskSyncDrawerStatus();
+}
+
+function generateTaskSyncCode() {
+  const rnd = Math.random().toString(36).slice(2, 7);
+  document.getElementById('taskSyncInput').value = 'sbt-' + rnd;
+}
+
+async function connectTaskSync() {
+  const code = document.getElementById('taskSyncInput').value.trim().toLowerCase();
+  if (!/^[a-z0-9-]{4,40}$/.test(code)) { showToast('Code: letters, numbers, dashes (4+ chars)'); return; }
+  taskSyncCode = code;
+  localStorage.setItem('sbt_synccode', code);
+  updateTaskSyncInfo();
+  showToast('Connecting…');
+  await taskSyncNow(true); // merge first so nothing lost
+  showToast('☁ Synced');
+  closeTaskSync();
+}
+
+function disconnectTaskSync() {
+  if (!confirm('Stop syncing on this device? Tasks stay here but won\'t sync anymore.')) return;
+  taskSyncCode = null;
+  localStorage.removeItem('sbt_synccode');
+  updateTaskSyncInfo();
+  showToast('Sync off');
+}
+
+// merge tasks by id, prefer the one edited/completed most recently
+function mergeTasks(a, b) {
+  const map = new Map();
+  [...a, ...b].forEach(t => {
+    if (!t || !t.id) return;
+    const ex = map.get(t.id);
+    if (!ex) { map.set(t.id, t); }
+    else {
+      // prefer completed state and newest data
+      map.set(t.id, {
+        ...ex, ...t,
+        complete: t.complete || ex.complete,
+        completedAt: t.completedAt || ex.completedAt,
+        created: Math.min(ex.created||Date.now(), t.created||Date.now()),
+      });
+    }
+  });
+  return [...map.values()];
+}
+
+async function manualTaskRefresh() {
+  if (taskSyncCode) { await taskSyncNow(false); showToast('☁ Refreshed'); }
+  else { showToast('Set up Cloud Sync (☰) to pull from other devices'); }
+}
+
+async function taskSyncNow(mergeFirst) {
+  if (!taskSyncCode || taskSyncing) return;
+  taskSyncing = true;
+  try {
+    const r = await fetch(TASK_WORKER + '/tasksync?code=' + encodeURIComponent(taskSyncCode));
+    const res = await r.json();
+    if (res.ok && res.found && res.data) {
+      const cloudTime = res.data.updatedAt || 0;
+      const localTime = parseInt(localStorage.getItem('sbt_lastpush') || '0');
+      if (mergeFirst || cloudTime > localTime) {
+        tasks = mergeTasks(tasks, res.data.tasks || []);
+        if (res.data.cats && res.data.cats.length) {
+          // merge categories by name
+          const names = new Set(cats.map(c=>c.name));
+          res.data.cats.forEach(c=>{ if(!names.has(c.name)) cats.push(c); });
+          localStorage.setItem('sbt_cats', JSON.stringify(cats));
+        }
+        localStorage.setItem('sbt_tasks', JSON.stringify(tasks));
+        renderTasks(); renderStats(); buildFilters();
+      }
+    }
+    const put = await fetch(TASK_WORKER + '/tasksync?code=' + encodeURIComponent(taskSyncCode), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tasks, cats }),
+    });
+    const putRes = await put.json();
+    if (putRes.ok) localStorage.setItem('sbt_lastpush', String(putRes.updatedAt || Date.now()));
+  } catch(e) { /* offline — keep working locally */ }
+  taskSyncing = false;
+}
 
 function openCompleted() {
   closeDrawer();
