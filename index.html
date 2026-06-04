@@ -321,7 +321,7 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 
 <!-- HEADER -->
 <div class="header">
-  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v6</span></div>
+  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v7</span></div>
   <div class="header-right">
     <span class="task-count" id="taskCount">0 tasks</span>
     <div class="btn-icon" onclick="openDrawer()">☰</div>
@@ -2706,13 +2706,31 @@ function parsePhotoResults(text) {
     const rest = line.replace('ITEM:','').trim();
     if (rest.toLowerCase() === 'none') return;
     const parts = rest.split('|');
-    const taskPart = parts[0].trim();
+    let taskPart = parts[0].trim();
     const amtPart = parts[1] ? parts[1].trim() : '';
-    const catMatch = taskPart.match(/^\[([\w\s-]+)\]\s*/);
-    const cat = matchCategory(catMatch ? catMatch[1] : '');
-    const taskText = taskPart.replace(/^\[[\w\s-]+\]\s*/,'').trim();
+
+    let cat = 'Other';
+    // Format A: [Category] task
+    const bracketMatch = taskPart.match(/^\[([\w\s-]+)\]\s*/);
+    if (bracketMatch) {
+      cat = matchCategory(bracketMatch[1]);
+      taskPart = taskPart.replace(/^\[[\w\s-]+\]\s*/,'').trim();
+    } else {
+      // Format B: bare category word(s) at start, e.g. "Buy-Task carpet"
+      // Try matching the longest leading category name
+      const sorted = [...cats].sort((a,b)=>b.name.length-a.name.length);
+      for (const c of sorted) {
+        const cn = c.name.toLowerCase();
+        const tp = taskPart.toLowerCase();
+        if (tp === cn || tp.startsWith(cn + ' ')) {
+          cat = c.name;
+          taskPart = taskPart.slice(c.name.length).trim();
+          break;
+        }
+      }
+    }
     const amount = parseAmount(amtPart);
-    if (taskText) items.push({cat, task:taskText, amount});
+    if (taskPart) items.push({cat, task:taskPart, amount});
   });
 
   if (!items.length) { showToast('No items found in photo'); return; }
