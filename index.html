@@ -2674,6 +2674,31 @@ async function handlePhotoScan(event) {
   } catch(e) { showToast('Scan error: ' + e.message); }
 }
 
+function parseAmount(raw) {
+  if (!raw) return null;
+  // Find a number possibly followed by k/m (thousand/million)
+  const m = raw.match(/([0-9][0-9,.]*)\s*([kKmM])?/);
+  if (!m) return null;
+  let num = parseFloat(m[1].replace(/,/g,''));
+  if (isNaN(num)) return null;
+  const suffix = (m[2]||'').toLowerCase();
+  if (suffix === 'k') num *= 1000;
+  else if (suffix === 'm') num *= 1000000;
+  return num;
+}
+
+function matchCategory(spoken) {
+  if (!spoken) return 'Other';
+  const s = spoken.trim().toLowerCase();
+  // Exact match first
+  let found = cats.find(c => c.name.toLowerCase() === s);
+  if (found) return found.name;
+  // Partial match (handles "Buy" → "Buy-Task", etc.)
+  found = cats.find(c => c.name.toLowerCase().includes(s) || s.includes(c.name.toLowerCase()));
+  if (found) return found.name;
+  return 'Other';
+}
+
 function parsePhotoResults(text) {
   const items = [];
   text.split('\n').forEach(line => {
@@ -2684,10 +2709,9 @@ function parsePhotoResults(text) {
     const taskPart = parts[0].trim();
     const amtPart = parts[1] ? parts[1].trim() : '';
     const catMatch = taskPart.match(/^\[([\w\s-]+)\]\s*/);
-    const cat = catMatch ? catMatch[1].trim() : 'Other';
+    const cat = matchCategory(catMatch ? catMatch[1] : '');
     const taskText = taskPart.replace(/^\[[\w\s-]+\]\s*/,'').trim();
-    const amtNum = amtPart.replace(/[^0-9.]/g,'');
-    const amount = amtNum ? parseFloat(amtNum) : null;
+    const amount = parseAmount(amtPart);
     if (taskText) items.push({cat, task:taskText, amount});
   });
 
