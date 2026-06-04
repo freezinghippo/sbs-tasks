@@ -315,13 +315,24 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 .task-item.completing { animation:completeFade 0.4s ease forwards; }
 @keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
 .task-item { animation:slideIn 0.2s ease; }
+
+/* Photo scan loader */
+.scan-overlay { position:fixed; inset:0; background:rgba(13,13,21,0.85); backdrop-filter:blur(4px); z-index:500; display:none; align-items:center; justify-content:center; }
+.scan-overlay.show { display:flex; }
+.scan-card { width:200px; height:200px; border-radius:20px; background:var(--surface); border:1px solid var(--border); position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:center; gap:14px; padding:0 26px; box-sizing:border-box; }
+.scan-card .hw { animation:lineread 2.2s linear infinite; }
+.scan-line { position:absolute; left:8px; right:8px; height:2px; border-radius:2px; top:0; animation:sweep 2.2s cubic-bezier(.5,0,.5,1) infinite, scanhue 8.8s linear infinite; }
+@keyframes sweep { 0%{top:14px;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{top:186px;opacity:0} }
+@keyframes scanhue { 0%{background:#6cffb8;box-shadow:0 0 12px 2px rgba(108,255,184,0.7)} 25%{background:#7c6cff;box-shadow:0 0 12px 2px rgba(124,108,255,0.7)} 50%{background:#ff6c9d;box-shadow:0 0 12px 2px rgba(255,108,157,0.7)} 75%{background:#ffd166;box-shadow:0 0 12px 2px rgba(255,209,102,0.7)} 100%{background:#6cffb8;box-shadow:0 0 12px 2px rgba(108,255,184,0.7)} }
+@keyframes lineread { 0%,38%{stroke:#3a3a52} 44%{stroke:var(--accent3)} 70%,100%{stroke:#8a8aa8} }
+.scan-label { position:absolute; bottom:-30px; left:0; right:0; text-align:center; font-size:12px; color:var(--text2); font-weight:600; }
 </style>
 </head>
 <body>
 
 <!-- HEADER -->
 <div class="header">
-  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v7</span></div>
+  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v9</span></div>
   <div class="header-right">
     <span class="task-count" id="taskCount">0 tasks</span>
     <div class="btn-icon" onclick="openDrawer()">☰</div>
@@ -549,6 +560,26 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 <div class="toast" id="toast"></div>
 
 <!-- SURE? CONFIRM MODAL -->
+<div class="scan-overlay" id="scanOverlay">
+  <div class="scan-card">
+    <svg viewBox="0 0 150 12" style="width:100%;height:12px"><path d="M2 8 Q12 2 22 7 T44 6 Q58 10 70 5 T96 7 Q110 3 124 7 L140 6" fill="none" stroke="#3a3a52" stroke-width="2.5" stroke-linecap="round" class="hw" style="animation-delay:0s"/></svg>
+    <svg viewBox="0 0 150 12" style="width:100%;height:12px"><path d="M2 7 Q14 3 26 8 T50 6 Q66 9 78 4 L100 7 Q116 4 128 8 L138 6" fill="none" stroke="#3a3a52" stroke-width="2.5" stroke-linecap="round" class="hw" style="animation-delay:0.34s"/></svg>
+    <svg viewBox="0 0 150 12" style="width:100%;height:12px"><path d="M2 6 Q10 9 20 5 T42 7 Q56 3 68 8 T92 6 Q108 9 120 5 L134 7" fill="none" stroke="#3a3a52" stroke-width="2.5" stroke-linecap="round" class="hw" style="animation-delay:0.68s"/></svg>
+    <svg viewBox="0 0 150 12" style="width:100%;height:12px"><path d="M2 7 Q16 4 28 8 T52 5 Q64 9 76 6 L98 7 Q112 3 126 7 L136 6" fill="none" stroke="#3a3a52" stroke-width="2.5" stroke-linecap="round" class="hw" style="animation-delay:1.02s"/></svg>
+    <svg viewBox="0 0 150 12" style="width:100%;height:12px"><path d="M2 6 Q12 9 24 5 T46 8 Q60 4 72 7 T94 6 L118 7 L130 6" fill="none" stroke="#3a3a52" stroke-width="2.5" stroke-linecap="round" class="hw" style="animation-delay:1.36s"/></svg>
+    <div class="scan-line"></div>
+    <div class="scan-label">Reading your list...</div>
+  </div>
+</div>
+
+<div class="sheet-overlay centered" id="photoCatPickerSheet" onclick="handleSheetClick(event,'photoCatPickerSheet')" style="z-index:470">
+  <div class="sheet">
+    <div class="sheet-title" style="margin-top:4px;font-size:16px">Pick Category</div>
+    <div id="photoCatGrid" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+    <button onclick="closeSheet('photoCatPickerSheet')" style="width:100%;margin-top:16px;padding:11px;border-radius:11px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:Inter,sans-serif;font-weight:700;font-size:14px;cursor:pointer">Cancel</button>
+  </div>
+</div>
+
 <div class="sheet-overlay centered" id="photoResultsSheet" onclick="handleSheetClick(event,'photoResultsSheet')" style="z-index:460">
   <div class="sheet">
     <div class="sheet-title" style="margin-top:4px;font-size:16px">📷 Scanned Items</div>
@@ -2636,7 +2667,7 @@ async function handlePhotoScan(event) {
   if (!file) return;
   event.target.value = ''; // reset so same file can be picked again
 
-  showToast('📷 Reading photo...');
+  document.getElementById('scanOverlay').classList.add('show');
 
   // Convert image to base64 (image NEVER stored — only sent to Gemini, then discarded)
   let base64, mimeType;
@@ -2649,7 +2680,7 @@ async function handlePhotoScan(event) {
     });
     mimeType = result.split(';')[0].split(':')[1];
     base64 = result.split(',')[1];
-  } catch(e) { showToast('Could not read image'); return; }
+  } catch(e) { document.getElementById('scanOverlay').classList.remove('show'); showToast('Could not read image'); return; }
 
   const catNames = cats.map(c=>c.name).join(', ');
   const prompt = `This image contains a handwritten or printed list of tasks/items. Extract each distinct task or item as a separate line. For each, guess the best category from: ${catNames}. If an item has a price or dollar amount, capture it. Respond ONLY with lines in this exact format, nothing else:\nITEM: [Category] task description | amount or blank\n\nIf you cannot read it, respond: ITEM: none`;
@@ -2668,10 +2699,14 @@ async function handlePhotoScan(event) {
     });
     // base64 and result are now out of scope after this function — image discarded
     const data = await resp.json();
-    if (!resp.ok) { showToast('Scan failed: ' + (data?.error?.message||resp.status)); return; }
+    if (!resp.ok) { document.getElementById('scanOverlay').classList.remove('show'); showToast('Scan failed: ' + (data?.error?.message||resp.status)); return; }
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    document.getElementById('scanOverlay').classList.remove('show');
     parsePhotoResults(text);
-  } catch(e) { showToast('Scan error: ' + e.message); }
+  } catch(e) {
+    document.getElementById('scanOverlay').classList.remove('show');
+    showToast('Scan error: ' + e.message);
+  }
 }
 
 function parseAmount(raw) {
@@ -2730,7 +2765,7 @@ function parsePhotoResults(text) {
       }
     }
     const amount = parseAmount(amtPart);
-    if (taskPart) items.push({cat, task:taskPart, amount});
+    if (taskPart) items.push({cat:'Buy-Task', task:taskPart, amount, due:null});
   });
 
   if (!items.length) { showToast('No items found in photo'); return; }
@@ -2738,11 +2773,17 @@ function parsePhotoResults(text) {
   window._photoItems = items;
   let html = items.map((it,i)=>{
     const color = getCatColor(it.cat);
-    return `<div class="ai-suggestion" style="border-bottom:1px solid var(--border)">
-      <div class="ai-suggestion-body">
-        <input type="checkbox" checked id="photoChk-${i}" style="width:16px;height:16px;accent-color:var(--accent3);margin-right:8px;vertical-align:middle">
-        <span style="font-size:13px;color:var(--text);font-weight:500">${esc(it.task)}</span>
-        <div class="task-meta" style="margin-left:24px"><span class="cat-pill-tag" style="background:${color};color:${pillTextColor(color)}">${esc(it.cat)}</span>${it.amount?`<span style="font-size:10px;color:var(--accent3);font-weight:700">$${it.amount.toLocaleString()}</span>`:''}</div>
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <input type="checkbox" checked id="photoChk-${i}" style="width:17px;height:17px;accent-color:var(--accent3);flex-shrink:0">
+        <span style="font-size:14px;color:var(--text);font-weight:600;flex:1">${esc(it.task)}</span>
+        ${it.amount?`<span style="font-size:11px;color:var(--accent3);font-weight:700">$${it.amount.toLocaleString()}</span>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-left:25px">
+        <span id="photoCat-${i}" class="cat-pill-tag" style="background:${color};color:${pillTextColor(color)}">${esc(it.cat)}</span>
+        <button onclick="openPhotoCatPicker(${i})" style="font-size:10px;font-weight:700;color:var(--accent);background:rgba(124,108,255,0.1);border:1px solid rgba(124,108,255,0.3);border-radius:7px;padding:4px 9px;cursor:pointer">Change</button>
+        <button onclick="openPhotoDatePicker(${i})" id="photoDateBtn-${i}" style="font-size:10px;font-weight:700;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:4px 9px;cursor:pointer">📅 ${it.due?formatDate(it.due):'Date'}</button>
+        <input type="date" id="photoDate-${i}" style="position:absolute;opacity:0;width:0;height:0;pointer-events:none" onchange="setPhotoDate(${i},this.value)">
       </div>
     </div>`;
   }).join('');
@@ -2753,13 +2794,54 @@ function parsePhotoResults(text) {
   document.getElementById('photoResultsSheet').classList.add('open');
 }
 
+let photoPickerIdx = null;
+
+function openPhotoCatPicker(i) {
+  photoPickerIdx = i;
+  const grid = document.getElementById('photoCatGrid');
+  grid.innerHTML = cats.map(c=>{
+    const color = c.color;
+    return `<div onclick="selectPhotoCat('${c.name.replace(/'/g,"\\'")}')" style="padding:9px 14px;border-radius:20px;background:${color};color:${pillTextColor(color)};font-size:13px;font-weight:700;cursor:pointer">${esc(c.name)}</div>`;
+  }).join('');
+  document.getElementById('photoCatPickerSheet').classList.add('open');
+}
+
+function selectPhotoCat(name) {
+  const items = window._photoItems || [];
+  if (items[photoPickerIdx]) {
+    items[photoPickerIdx].cat = name;
+    const pill = document.getElementById('photoCat-'+photoPickerIdx);
+    if (pill) {
+      const color = getCatColor(name);
+      pill.style.background = color;
+      pill.style.color = pillTextColor(color);
+      pill.textContent = name;
+    }
+  }
+  closeSheet('photoCatPickerSheet');
+}
+
+function openPhotoDatePicker(i) {
+  const inp = document.getElementById('photoDate-'+i);
+  if (inp) { inp.showPicker ? inp.showPicker() : inp.click(); }
+}
+
+function setPhotoDate(i, val) {
+  const items = window._photoItems || [];
+  if (items[i]) {
+    items[i].due = val || null;
+    const btn = document.getElementById('photoDateBtn-'+i);
+    if (btn) btn.innerHTML = '📅 ' + (val ? formatDate(val) : 'Date');
+  }
+}
+
 function addPhotoItems() {
   const items = window._photoItems || [];
   let added = 0;
   items.forEach((it,i) => {
     const chk = document.getElementById('photoChk-'+i);
     if (chk && chk.checked) {
-      tasks.unshift({id:Date.now()+i,cat:it.cat,task:it.task,due:null,notes:'',important:false,amount:it.amount,complete:false,created:Date.now(),completedAt:null,recur:'none',subtasks:[]});
+      tasks.unshift({id:Date.now()+i,cat:it.cat,task:it.task,due:it.due||null,notes:'',important:false,amount:it.amount,complete:false,created:Date.now(),completedAt:null,recur:'none',subtasks:[]});
       added++;
     }
   });
