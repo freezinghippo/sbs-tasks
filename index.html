@@ -332,7 +332,7 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 
 <!-- HEADER -->
 <div class="header">
-  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v10</span></div>
+  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v11</span></div>
   <div class="header-right">
     <span class="task-count" id="taskCount">0 tasks</span>
     <div class="btn-icon" onclick="openDrawer()">☰</div>
@@ -2232,20 +2232,26 @@ function renderDayDetail() {
 async function createDailyBriefingEvent(testMode) {
   if (!googleToken) { showToast('Connect Google first'); return; }
   const today = new Date().toISOString().split('T')[0];
+  const now = Date.now();
   const pending = tasks.filter(t=>!t.complete);
   const overdue = pending.filter(t=>t.due && t.due < today);
   const dueToday = pending.filter(t=>t.due === today);
+  const weekEnd = new Date(now + 7*86400000).toISOString().split('T')[0];
+  const moneyWeek = pending.filter(t=>t.amount>0 && t.due && t.due <= weekEnd).reduce((s,t)=>s+t.amount,0);
+  const fmt = n => '$' + Math.round(n).toLocaleString();
 
   let desc = '';
   if (overdue.length) {
-    desc += 'OVERDUE (' + overdue.length + '):\n';
-    overdue.forEach(t => desc += '• ' + t.task + ' [' + t.cat + ']\n');
+    desc += '⚠ OVERDUE (' + overdue.length + '):\n';
+    overdue.slice(0,8).forEach(t => desc += '• ' + t.task + ' [' + t.cat + ']' + (t.amount?' '+fmt(t.amount):'') + '\n');
     desc += '\n';
   }
   if (dueToday.length) {
-    desc += 'DUE TODAY (' + dueToday.length + '):\n';
-    dueToday.forEach(t => desc += '• ' + t.task + ' [' + t.cat + ']\n');
+    desc += '📅 DUE TODAY (' + dueToday.length + '):\n';
+    dueToday.forEach(t => desc += '• ' + t.task + ' [' + t.cat + ']' + (t.amount?' '+fmt(t.amount):'') + '\n');
+    desc += '\n';
   }
+  if (moneyWeek > 0) desc += '💰 Money due this week: ' + fmt(moneyWeek) + '\n';
   if (!desc) desc = 'No overdue or due-today tasks. You are all caught up!';
 
   // Determine event time
@@ -2298,6 +2304,50 @@ async function pushTaskToCalendar(task) {
 }
 
 // AI
+function computeTaskFacts() {
+  const today = new Date().toISOString().split('T')[0];
+  const now = Date.now();
+  const pending = tasks.filter(t=>!t.complete);
+
+  // Overdue
+  const overdue = pending.filter(t=>t.due && t.due < today)
+    .sort((a,b)=>(a.due||'').localeCompare(b.due||''));
+  // Due today
+  const dueToday = pending.filter(t=>t.due === today);
+  // Due this week (next 7 days, excluding today)
+  const weekEnd = new Date(now + 7*86400000).toISOString().split('T')[0];
+  const dueWeek = pending.filter(t=>t.due && t.due > today && t.due <= weekEnd);
+
+  // Money due this week (priced tasks due within 7 days)
+  const moneyWeek = pending.filter(t=>t.amount>0 && t.due && t.due <= weekEnd)
+    .reduce((s,t)=>s+t.amount,0);
+  // Money overdue
+  const moneyOverdue = overdue.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+
+  // Stale: created 30+ days ago, still open, no due date or far future
+  const stale = pending.filter(t=>{
+    const age = (now - t.created)/86400000;
+    return age >= 30;
+  }).sort((a,b)=>a.created-b.created);
+
+  // Wins: completed in last 7 days
+  const weekAgo = now - 7*86400000;
+  const completedWeek = tasks.filter(t=>t.complete && t.completedAt &&
+    new Date(t.completedAt).getTime() >= weekAgo).length;
+
+  const fmt = n => '$' + Math.round(n).toLocaleString();
+  const lines = [];
+  lines.push('OVERDUE: ' + overdue.length + (overdue.length ? ' (oldest: "' + overdue[0].task + '" due ' + overdue[0].due + ')' : ''));
+  lines.push('DUE TODAY: ' + dueToday.length + (dueToday.length ? ' — ' + dueToday.map(t=>t.task).slice(0,5).join(', ') : ''));
+  lines.push('DUE THIS WEEK: ' + dueWeek.length);
+  if (moneyOverdue > 0) lines.push('MONEY OVERDUE: ' + fmt(moneyOverdue));
+  if (moneyWeek > 0) lines.push('MONEY DUE THIS WEEK: ' + fmt(moneyWeek));
+  if (stale.length) lines.push('STALE (30+ days untouched): ' + stale.length + ' (oldest: "' + stale[0].task + '")');
+  lines.push('COMPLETED LAST 7 DAYS: ' + completedWeek);
+
+  return lines.join('\n');
+}
+
 async function loadAI() {
   const wrap = document.getElementById('aiWrap');
   if (!googleToken) {
@@ -2320,27 +2370,35 @@ async function loadAI() {
 
   // Then call Gemini for the briefing
   try {
-    const pending = tasks.filter(t=>!t.complete).slice(0,30).map(t=>`[${t.cat}] ${t.task}${t.due?' (due '+t.due+')':''}`).join('\n');
+    const facts = computeTaskFacts();
     const today = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
     const catNames = cats.map(c=>c.name).join(', ');
-    const prompt = `You are Steve's executive assistant. Today is ${today}.
+    const prompt = `You are Steve's sharp, concise morning assistant. Today is ${today}.
 
-His calendar (next 7 days):
+=== HIS TASK SITUATION (computed, accurate — use these exact numbers) ===
+${facts}
+
+=== HIS CALENDAR (next 7 days) ===
 ${calData}
 
-His Gmail primary inbox:
+=== HIS GMAIL PRIMARY INBOX ===
 ${gmailData}
 
-Analyze ONLY the email and calendar above. Ignore any task list. Your job is to surface things that need a DECISION or ACTION and would otherwise be missed.
+Write a morning briefing that BLENDS his own tasks with what's coming at him from email and calendar. The numbers above are exact — use them, don't invent others.
 
-Respond in exactly this format, nothing else:
+Respond in EXACTLY this format, nothing else:
 
-BRIEFING: 2-3 plain sentences. Lead with the single most time-sensitive thing (a deadline, an appointment, a reply someone is waiting on). Name the specific sender or event. If nothing is urgent, say so plainly. No greetings, no "good morning", no markdown, no asterisks.
+BRIEFING: 3-4 punchy sentences, no greeting, no markdown, no asterisks. Priorities in order:
+1. Lead with what's most urgent across BOTH tasks and inbox — an overdue item, money due, a deadline, an appointment, or a reply someone's waiting on.
+2. Mention money if any is due/overdue (he tracks a budget — this matters).
+3. Surface one thing from email/calendar that needs a decision today.
+4. If he completed a lot last week or is on top of things, give one quick word of momentum. If he's behind (lots overdue/stale), be honest but not preachy.
+Name specific tasks, senders, or events. Be direct and useful, like a smart chief of staff who respects his time.
 
-Then, ONLY for emails that imply a concrete action (a bill to pay, a reply needed, an appointment to confirm, a deadline), output:
+Then, ONLY for emails that imply a concrete NEW action not already in his tasks (a bill, a reply needed, an appointment to confirm, a deadline), output:
 SUGGEST: [Category] specific action | why it matters | sender@domain.com
 
-Do not suggest tasks for newsletters, promotions, or FYI emails. Better to suggest 2 real things than 5 weak ones. Categories: ${catNames}`;
+Do not suggest tasks for newsletters, promos, or FYI emails. Max 3 suggestions, only real ones. Categories: ${catNames}`;
 
     const geminiResp = await fetch(
       'https://gemini-proxy.steveblekaitis.workers.dev',
