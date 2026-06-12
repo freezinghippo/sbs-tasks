@@ -332,7 +332,7 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 
 <!-- HEADER -->
 <div class="header">
-  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v12</span></div>
+  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v13</span></div>
   <div class="header-right">
     <span class="task-count" id="taskCount">0 tasks</span>
     <div class="btn-icon" onclick="openDrawer()">☰</div>
@@ -2829,20 +2829,17 @@ function parseVoiceInput(transcript) {
 function initVoice() {
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){document.getElementById('voiceBtn').style.opacity='0.3';return;}
-  recognition=new SR();recognition.continuous=true;recognition.interimResults=true;recognition.lang='en-US';recognition.maxAlternatives=1;
+  recognition=new SR();recognition.continuous=false;recognition.interimResults=false;recognition.lang='en-US';recognition.maxAlternatives=1;
   recognition.onresult=e=>{
-    // Rebuild the FULL transcript fresh from all results every time.
-    // e.results is cumulative, so we read the WHOLE thing each fire —
-    // never append, which is what caused "go go to go to sleep".
-    let full = '';
-    for (let i = 0; i < e.results.length; i++) {
-      full += e.results[i][0].transcript;
-      // add a space between separate result segments
-      if (i < e.results.length - 1) full += ' ';
-    }
-    full = full.replace(/\s+/g, ' ').trim();
-    window._voiceTranscript = full;
-    document.getElementById('taskInput').value = full;
+    // continuous=false + interimResults=false => exactly ONE final result,
+    // no accumulation, no interim pileup. Take only the last result's transcript.
+    const idx = e.results.length - 1;
+    let phrase = e.results[idx][0].transcript;
+    // Safety net: collapse any accidental immediate word repeats like "go go to"
+    phrase = phrase.replace(/\s+/g, ' ').trim();
+    phrase = phrase.replace(/\b(\w+)(\s+\1\b)+/gi, '$1'); // dedupe repeated words
+    window._voiceTranscript = phrase;
+    document.getElementById('taskInput').value = phrase;
   };
   recognition.onend=()=>{
     isListening=false;
