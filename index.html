@@ -332,7 +332,7 @@ input[type="date"].date-input-hidden { position:absolute; opacity:0; pointer-eve
 
 <!-- HEADER -->
 <div class="header">
-  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v11</span></div>
+  <div class="logo"><span class="logo-sb">SB's </span><span class="logo-tasks">Tasks</span><span style="font-size:9px;color:var(--text3);font-weight:600;margin-left:6px">v12</span></div>
   <div class="header-right">
     <span class="task-count" id="taskCount">0 tasks</span>
     <div class="btn-icon" onclick="openDrawer()">☰</div>
@@ -2831,18 +2831,18 @@ function initVoice() {
   if(!SR){document.getElementById('voiceBtn').style.opacity='0.3';return;}
   recognition=new SR();recognition.continuous=true;recognition.interimResults=true;recognition.lang='en-US';recognition.maxAlternatives=1;
   recognition.onresult=e=>{
-    // Only use FINAL results to avoid duplicate/interim word pileup
-    let finalText = '';
+    // Rebuild the FULL transcript fresh from all results every time.
+    // e.results is cumulative, so we read the WHOLE thing each fire —
+    // never append, which is what caused "go go to go to sleep".
+    let full = '';
     for (let i = 0; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' ';
+      full += e.results[i][0].transcript;
+      // add a space between separate result segments
+      if (i < e.results.length - 1) full += ' ';
     }
-    // Show interim too but only the latest interim piece
-    let interim = '';
-    for (let i = 0; i < e.results.length; i++) {
-      if (!e.results[i].isFinal) interim = e.results[i][0].transcript;
-    }
-    window._voiceTranscript = finalText.trim();
-    document.getElementById('taskInput').value = (finalText + interim).trim();
+    full = full.replace(/\s+/g, ' ').trim();
+    window._voiceTranscript = full;
+    document.getElementById('taskInput').value = full;
   };
   recognition.onend=()=>{
     isListening=false;
